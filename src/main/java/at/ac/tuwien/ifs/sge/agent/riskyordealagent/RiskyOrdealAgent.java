@@ -39,6 +39,7 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
         return bestAction;
     }
 
+    //A method just to test if the agent works by picking random actions
     public RiskAction getRandomAction(final Risk game){
         final Set<RiskAction> possibleActions = (Set<RiskAction>)game.getPossibleActions();
         RiskAction bestAction = null;
@@ -55,22 +56,23 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
         return bestAction;
     }
 
-    public RiskAction getBestAction(int playerid, final Risk game){
+    //The part for getting the best action has been partitioned into its own method for better code readability
+    public RiskAction getBestAction(final Risk game){
         final Set<RiskAction> possibleActions = (Set<RiskAction>)game.getPossibleActions();
         double bestUtilityValue = Double.NEGATIVE_INFINITY;
         double bestHeuristicValue = Double.NEGATIVE_INFINITY;
         RiskAction bestAction = null;
             for (final RiskAction possibleAction : possibleActions) {
                 final Risk next = (Risk)game.doAction(possibleAction);
-                final double nextUtilityValue = next.getUtilityValue(playerid);
-                final double nextHeuristicValue = getHeuristicValue(this.playerId, game, next);
-//                final double nextHeuristicValue = getPathHeuristicValue(playerid, game, next, 0, 5);
+                final double nextUtilityValue = next.getUtilityValue(this.playerId);
+                final double nextHeuristicValue = getHeuristicValue(game, next);
+//                final double nextHeuristicValue = getTurnHeuristicValue(game, next, 0, 5);
 //            System.out.println((Risk)next.getActionRecords().get(0));
 //            final double nextHeuristicValue = next.getHeuristicValue(this.playerId);
 //            System.out.println("Possible Action:" + possibleAction + " | Next Action:" + next + " | Heuristic Value:" + nextHeuristicValue + " | Utility Value:" + nextUtilityValue);
 //            System.out.println(game.getBoard().getContinents());
 //            for (int i = 0; i <= )
-                if (bestUtilityValue <= nextUtilityValue && (bestUtilityValue < nextUtilityValue || bestHeuristicValue <= nextHeuristicValue)) {    //Maybe remove = sign in the bestHeauristic value?
+                if (bestUtilityValue <= nextUtilityValue && (bestUtilityValue < nextUtilityValue || bestHeuristicValue <= nextHeuristicValue)) {
                     bestUtilityValue = nextUtilityValue;
                     bestHeuristicValue = nextHeuristicValue;
                     bestAction = possibleAction;
@@ -79,27 +81,41 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
         return bestAction;
     }
 
-    public double getPathHeuristicValue(int playerid, final Risk game, final Risk nextActionState, double hv, int depth){
+    //An unsuccessful attempt at getting all of the heuristic values for the player's turn through the recursion,
+    //to understand the possible overall heuristic value of the given turn. The approach was too similar to the Alpha
+    //Beta pruning, so we decided to drop it.
+
+    /*public double getTurnHeuristicValue(final Risk game, final Risk nextActionState, double hv){
         double heuristicValue = hv;
-        if (depth > 0) {
-            heuristicValue += getHeuristicValue(playerid, game, nextActionState);
+        if (nextActionState.getCurrentPlayer() == this.playerId) {
+            heuristicValue += getHeuristicValue(game, nextActionState);
             final Set<RiskAction> possibleActions = (Set<RiskAction>)nextActionState.getPossibleActions();
             for (final RiskAction possibleAction : possibleActions) {
                 final Risk nextNextActionState = (Risk)game.doAction(possibleAction);
-                heuristicValue += getPathHeuristicValue(playerid, nextActionState, nextNextActionState, heuristicValue, depth - 1);
-                System.out.println("Heauristic" + heuristicValue + " depth" + depth);
+                heuristicValue += getTurnHeuristicValue(nextActionState, nextNextActionState, heuristicValue);
             }
-            System.out.println("Heauristic" + heuristicValue + " depth" + depth);
             return heuristicValue;
         }
-        System.out.println("Heauristic" + heuristicValue + " depth" + depth);
         return 0;
-    }
+    }*/
 
-    public double getHeuristicValue(int playerid, final Risk previousActionState, final Risk currentActionState){
+    //Agent's new state heuristic value determining method
+    public double getHeuristicValue(final Risk previousActionState, final Risk currentActionState){
         double heuristicValue = 0;
         RiskBoard currentBoard = currentActionState.getBoard();
-        if (currentBoard.isReinforcementPhase()){
+        //Initially place the soldiers so that they could capture or be very close to capturing a continent as a whole, or several of them to get bonuses quickly
+        //Place soldiers in countries that are easily defendable (i.e. with least possible bordering countries) but also try to choke enemy territories with least borders (i.e. place soldiers in the only bordering country(ies))
+        //Don't overextend into the enemy territories to avoid being cut out and encircled
+        //Don't be attacking an enemy territory unless you are outnumbering them by a lot
+        //Try to have as least bordering enemy territorries as possible, creating big empire out of your territories with well fortified borders
+        //Use reinforcement learning to decide between using the best offensive or the best defensive approach (only after calculating the best ones)
+        //Try to not have any territory with low troops "close" (how close?) to the border
+
+        //Possible (unlikely) strategy: countering common tactics -> Con: could result in overfitting against specific
+        //techniques but work poorly against others.
+
+        //Different phases should involve different tactics
+        if (currentBoard.isReinforcementPhase()) {
 
         }
         else if(currentBoard.isAttackPhase()){
@@ -111,9 +127,9 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
         else if(currentBoard.isOccupyPhase()){
 
         }
-        if (previousActionState.getBoard().getNrOfTerritoriesOccupiedByPlayer(playerid) < currentActionState.getBoard().getNrOfTerritoriesOccupiedByPlayer(playerid))
+        if (previousActionState.getBoard().getNrOfTerritoriesOccupiedByPlayer(this.playerId) < currentActionState.getBoard().getNrOfTerritoriesOccupiedByPlayer(this.playerId))
             heuristicValue++;
-        if  (currentActionState.getBoard().couldTradeInCards(playerid)){
+        if  (currentActionState.getBoard().couldTradeInCards(this.playerId)){
             heuristicValue = heuristicValue + currentActionState.getBoard().getTradeInBonus();
         }
 //        System.out.println(heuristicValue);
