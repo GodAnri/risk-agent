@@ -1,4 +1,0 @@
-Manifest-Version: 1.0
-Sge-Type: agent
-Agent-Class: at.ac.tuwien.ifs.sge.agent.riskyordealagent.RiskyOrdealAgent
-Agent-Name: RiskyOrdealAgent
