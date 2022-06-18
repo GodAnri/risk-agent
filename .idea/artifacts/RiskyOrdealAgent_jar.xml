@@ -1,0 +1,13 @@
+<component name="ArtifactManager">
+  <artifact name="RiskyOrdealAgent:jar">
+    <output-path>$PROJECT_DIR$/risk-env/agents</output-path>
+    <root id="root">
+      <element id="archive" name="RiskyOrdealAgent.jar">
+        <element id="directory" name="META-INF">
+          <element id="file-copy" path="$PROJECT_DIR$/out/production/resources/META-INF/MANIFEST.MF" />
+        </element>
+        <element id="module-output" name="RISKyOrdealProject.main" />
+      </element>
+    </root>
+  </artifact>
+</component>
