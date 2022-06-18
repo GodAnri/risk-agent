@@ -1,6 +1,5 @@
 package at.ac.tuwien.ifs.sge.agent.riskyordealagent;
 
-import java.util.Random;
 import java.util.Set;
 import at.ac.tuwien.ifs.sge.game.risk.board.RiskBoard;
 import java.util.concurrent.TimeUnit;
@@ -36,61 +35,19 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
         game.getHeuristicValue(new double[0]);
         game.getHeuristicValue(this.playerId);
         RiskAction bestAction = getBestAction(game);
-//        RiskAction bestAction = getRandomAction(game);
         assert bestAction != null;
         assert game.isValidAction(bestAction);
         this.log.debugf("Found best move: %s", new Object[] { bestAction.toString() });
         return bestAction;
     }
 
-    //A method just to test if the agent works by picking random actions
-    public RiskAction getRandomAction(final Risk game){
-        final Set<RiskAction> possibleActions = (Set<RiskAction>)game.getPossibleActions();
-        RiskAction bestAction = null;
-        int item = new Random().nextInt(possibleActions.size());
-        int i = 0;
-        for(RiskAction action : possibleActions)
-        {
-            if (i == item) {
-                bestAction = action;
-                System.out.println("That's the territory " + game.getBoard().getTerritories().get(bestAction.selected()));
-                System.out.println("Selected territory " + bestAction.selected());
-                System.out.println("Reinforced territory id " + bestAction.reinforcedId());
-                System.out.println("Attacked territory id " + bestAction.attackingId());
-                System.out.println("Defended territory id " + bestAction.defendingId());
-                System.out.println("Fortified territory id " + bestAction.fortifiedId());
-                System.out.println("Fortifying territory id " + bestAction.fortifyingId());
-                System.out.println("Troops " + bestAction.troops());
-//                System.out.println("Occupied territory id " + bestAction);
-                if (game.getBoard().isReinforcementPhase()) {
-                    r = r+1;
-                    System.out.println("Phase: Reinforcement");
-                }
-                else if(game.getBoard().isAttackPhase()){
-                    a = a+1;
-                    System.out.println("Phase: Attack");
-                }
-                else if(game.getBoard().isFortifyPhase()){
-                    f = f+1;
-                    System.out.println("Phase: Fortify");
-                }
-                else if(game.getBoard().isOccupyPhase()){
-                    o = o+1;
-                    System.out.println("Phase: Occupy");
-                }
-                break;
-            }
-            i++;
-        }
-        return bestAction;
-    }
-
-    //The part for getting the best action has been partitioned into its own method for better code readability
+    // The part for getting the best action has been partitioned into its own method for better code readability
     public RiskAction getBestAction(final Risk game){
         final Set<RiskAction> possibleActions = (Set<RiskAction>)game.getPossibleActions();
         double bestUtilityValue = Double.NEGATIVE_INFINITY;
         double bestHeuristicValue = Double.NEGATIVE_INFINITY;
         RiskAction bestAction = null;
+        // Number of available actions of each type
         r = 0;
         a = 0;
         f = 0;
@@ -103,53 +60,29 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
             final double nextUtilityValue = next.getUtilityValue(this.playerId);
             final double nextHeuristicValue = getHeuristicValue(game, next, possibleAction, counter);
             counter += 1;
-//            final double nextHeuristicValue = getTurnHeuristicValue(game, next, 0, 5);
-//            System.out.println((Risk)next.getActionRecords().get(0));
-//            final double nextHeuristicValue = next.getHeuristicValue(this.playerId);
-//            System.out.println("Possible Action:" + possibleAction + " | Next Action:" + next + " | Heuristic Value:" + nextHeuristicValue + " | Utility Value:" + nextUtilityValue);
-//            System.out.println(game.getBoard().getContinents());
-//            for (int i = 0; i <= )
             if (bestUtilityValue <= nextUtilityValue && (bestUtilityValue < nextUtilityValue || bestHeuristicValue <= nextHeuristicValue)) {
                 bestUtilityValue = nextUtilityValue;
                 bestHeuristicValue = nextHeuristicValue;
                 bestAction = possibleAction;
             }
         }
-        System.out.println("Reinforce: "+r+"\n"+"Attack:"+a+"\n"+"Fortify:"+f+"\n"+"Occupy:"+o+"\n");
+        System.out.println("Reinforce: "+r+"\nAttack: "+a+"\nFortify: "+f+"\nOccupy: "+o+"\n");
         final Risk next = (Risk)game.doAction(bestAction);
-//        getHeuristicValue(game, next, bestAction, counter);
         printStatus(next, bestAction, bestHeuristicValue);
         return bestAction;
     }
 
-    //An unsuccessful attempt at getting all of the heuristic values for the player's turn through the recursion,
-    //to understand the possible overall heuristic value of the given turn. The approach was too similar to the Alpha
-    //Beta pruning, so we decided to drop it.
-
-    /*public double getTurnHeuristicValue(final Risk game, final Risk nextActionState, double hv){
-        double heuristicValue = hv;
-        if (nextActionState.getCurrentPlayer() == this.playerId) {
-            heuristicValue += getHeuristicValue(game, nextActionState);
-            final Set<RiskAction> possibleActions = (Set<RiskAction>)nextActionState.getPossibleActions();
-            for (final RiskAction possibleAction : possibleActions) {
-                final Risk nextNextActionState = (Risk)game.doAction(possibleAction);
-                heuristicValue += getTurnHeuristicValue(nextActionState, nextNextActionState, heuristicValue);
-            }
-            return heuristicValue;
-        }
-        return 0;
-    }*/
-
-    //Agent's new state heuristic value determining method
+    // Agent's new state heuristic value determining method
     public double getHeuristicValue(final Risk previousActionState, final Risk currentActionState, final RiskAction action, int counter){
         double heuristicValue = 0;
         RiskBoard currentBoard = currentActionState.getBoard();
         RiskBoard previousBoard = previousActionState.getBoard();
 
-//        printStatus(currentActionState, action);
-//        System.out.println("This is action number " + counter);
+        // For debugging:
+        // printStatus(currentActionState, action);
+        // System.out.println("This is action number " + counter);
 
-        //Different phases should involve different tactics
+        // Different phases should involve different tactics
         if (action.isEndPhase())
             return 0;
         else if (currentBoard.isReinforcementPhase()) {
@@ -157,8 +90,9 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
                 return Double.NEGATIVE_INFINITY;
             RiskTerritory reinforcedTerritory = currentBoard.getTerritories().get(action.reinforcedId());
             RiskTerritory beforeTerritory = previousBoard.getTerritories().get(action.reinforcedId());
+
+            // Initial reinforcement:
             if (beforeTerritory.getTroops() == 0) {
-                //Initial reinforcement:
                 heuristicValue += 50;
                 if (!currentBoard.neighboringFriendlyTerritories(action.reinforcedId()).isEmpty()) {
                     heuristicValue += 20;
@@ -166,9 +100,11 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
                 if (currentBoard.neighboringEnemyTerritories(action.reinforcedId()).isEmpty()) {
                     heuristicValue += 10;
                 }
-                //Place soldiers in countries that are easily defendable (i.e. with least possible bordering countries)
+
+                // Place soldiers in countries that are easily defendable (i.e. with least possible bordering countries)
                 heuristicValue -= currentBoard.neighboringEnemyTerritories(action.reinforcedId()).size() * 5;
-                //Initially place the soldiers so that they could capture or be very close to capturing a continent as a whole, or several of them to get bonuses quickly
+
+                // Initially place the soldiers so that they could capture or be very close to capturing a continent as a whole, or several of them to get bonuses quickly
                 int continent = reinforcedTerritory.getContinentId();
                 boolean conflict = false;
                 for (int i = 0; i < 42; i++) {
@@ -180,8 +116,10 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
                 if (!conflict) {
                     heuristicValue += 10;
                 }
+
+            // Further reinforcement
             } else {
-                //Try to not have any territory with low troops on the border
+                // Try to not have any territory with low troops on the border
                 for (int enemyID : currentBoard.neighboringEnemyTerritories(action.reinforcedId())) {
                     RiskTerritory enemy = currentBoard.getTerritories().get(enemyID);
                     double troopsAdded = reinforcedTerritory.getTroops() - beforeTerritory.getTroops();
@@ -193,13 +131,14 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
                         heuristicValue -= 50;
                     else heuristicValue += 2 * troopDiff;
                 }
-                //If a territory has low troops on the border, and it's not worth protecting, protect its neighbours instead
+
+                // If a territory has low troops on the border, and it's not worth protecting, protect its neighbours instead
                 for (int neighbourID : currentBoard.neighboringFriendlyTerritories(action.reinforcedId())) {
                     RiskTerritory neighbour = currentBoard.getTerritories().get(neighbourID);
                     for (int enemyID : currentBoard.neighboringEnemyTerritories(neighbourID)) {
                         RiskTerritory enemy = currentBoard.getTerritories().get(enemyID);
                         double troopsAdded = reinforcedTerritory.getTroops() - beforeTerritory.getTroops();
-                        int troopsAvailable = previousBoard.getNrOfTerritoriesOccupiedByPlayer(this.playerId)/3;
+                        int troopsAvailable = previousBoard.getNrOfTerritoriesOccupiedByPlayer(this.playerId) / 3;
                         int troopDiff = neighbour.getTroops() - enemy.getTroops();
                         if (troopsAdded >= 0.5 * troopsAvailable)
                             heuristicValue -= 200;
@@ -209,6 +148,8 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
                         } else heuristicValue -= 200;
                     }
                 }
+
+                // If a territory is belonging to layer 3 or deeper (has 3+ distance to the border) it's not worth reinforcing
                 boolean layer2 = false;
                 if (currentBoard.neighboringEnemyTerritories(action.reinforcedId()).isEmpty()) {
                     for (int neighbourID : currentBoard.neighboringEnemyTerritories(action.reinforcedId())) {
@@ -228,14 +169,14 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
             RiskTerritory attackingTerritory = previousBoard.getTerritories().get(action.attackingId());
             RiskTerritory defendingTerritory = previousBoard.getTerritories().get(action.defendingId());
             if (attackingTerritory != null && defendingTerritory != null){
-                //Penalty for each adjacent friendly territory to the owner, therefore our enemy's
+                // Penalty for each adjacent friendly territory to the owner, therefore our enemy's
                 heuristicValue -= (previousBoard.neighboringFriendlyTerritories(action.defendingId()).size()) * 2.5;
+
+                // Reward attacking territories with less troops
                 if (attackingTerritory.getTroops() >= defendingTerritory.getTroops())
                     heuristicValue += 100 * action.troops();
                 else if (attackingTerritory.getTroops() < defendingTerritory.getTroops())
-                    heuristicValue += 50 * action.troops() - 200;
-                if (previousActionState.getBoard().getNrOfTerritoriesOccupiedByPlayer(this.playerId) < currentActionState.getBoard().getNrOfTerritoriesOccupiedByPlayer(this.playerId))
-                    heuristicValue += 100;
+                    heuristicValue -= 200 - 50 * action.troops();
             }
             a = a+1;
         }
@@ -246,6 +187,7 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
             RiskTerritory beforeFortifying = previousBoard.getTerritories().get(action.fortifyingId());
             RiskTerritory fortifiedTerritory = currentBoard.getTerritories().get(action.fortifiedId());
             if (fortifyingTerritory != null && fortifiedTerritory != null){
+                // Reward fortifying borders without making other borders vulnerable
                 heuristicValue += currentBoard.neighboringEnemyTerritories(action.fortifiedId()).size();
                 for (int enemy : currentBoard.neighboringEnemyTerritories(action.fortifiedId())){
                     if (fortifiedTerritory.getTroops() >= currentBoard.getTerritories().get(enemy).getTroops()){
@@ -262,10 +204,11 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
                     }
                 }
 
-                //Reward for "suiciding" lost territories to protect their neighbours
+                // Reward for "suiciding" lost territories to protect their neighbours
                 for (int enemy : currentBoard.neighboringEnemyTerritories(action.fortifyingId())){
                     if (beforeFortifying.getTroops() < currentBoard.getTerritories().get(enemy).getTroops()) {
                         heuristicValue += 10 * action.troops();
+
                         // Reward for baiting into a more protected second layer
                         for (int friendly : currentBoard.neighboringFriendlyTerritories(action.fortifyingId())) {
                             heuristicValue += (currentBoard.getTerritories().get(friendly).getTroops() - currentBoard.getTerritories().get(enemy).getTroops()) * 5;
@@ -275,10 +218,12 @@ public class RiskyOrdealAgent extends AbstractGameAgent<Risk, RiskAction> implem
             }
             f = f+1;
         }
+        // Reward for occupying territories
         else if(currentBoard.isOccupyPhase()) {
             heuristicValue += 1000;
             o = o + 1;
         }
+        // Reward for trading in sets of cards for troops
         if  (currentActionState.getBoard().couldTradeInCards(this.playerId)){
             heuristicValue = heuristicValue + currentActionState.getBoard().getTradeInBonus();
         }
